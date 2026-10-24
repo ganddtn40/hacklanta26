@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Send, CheckCircle2, MessageSquare, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -10,6 +10,28 @@ export default function ContactModal({ isOpen, onClose }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
+
+  // Lock body scroll on mobile when modal is active
+  useEffect(() => {
+    if (isOpen) {
+      const originalStyle = window.getComputedStyle(document.body).overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalStyle;
+      };
+    }
+  }, [isOpen]);
+
+  // Handle escape key
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isOpen) {
+        handleClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -53,30 +75,32 @@ export default function ContactModal({ isOpen, onClose }) {
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={handleClose}
-            className="absolute inset-0 bg-black/80 backdrop-blur-md"
+            className="fixed inset-0 bg-black/80 backdrop-blur-md"
           />
 
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="relative w-full max-w-md bg-[#0A0B16] border border-accent-pink/40 rounded-3xl p-6 sm:p-8 shadow-[0_0_50px_rgba(255,46,136,0.25)] z-10"
+            className="relative w-full max-w-md bg-[#0A0B16] border border-accent-pink/40 rounded-3xl p-5 sm:p-8 shadow-[0_0_50px_rgba(255,46,136,0.25)] z-10 max-h-[92dvh] overflow-y-auto my-auto"
           >
             <button
               onClick={handleClose}
-              className="absolute top-5 right-5 w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-text-muted hover:text-white transition-colors"
+              type="button"
+              aria-label="Close dialog"
+              className="absolute top-4 right-4 sm:top-5 sm:right-5 w-11 h-11 sm:w-9 sm:h-9 rounded-full bg-white/5 hover:bg-white/10 active:bg-white/20 flex items-center justify-center text-text-muted hover:text-white transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
 
             {!sent ? (
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-4 pt-1 sm:pt-0">
                 <div className="flex items-center gap-2 text-accent-pink text-xs font-bold uppercase tracking-widest">
                   <MessageSquare className="w-4 h-4" />
                   <span>Direct Transmission</span>
@@ -84,7 +108,7 @@ export default function ContactModal({ isOpen, onClose }) {
                 <h3 className="font-display text-2xl font-black uppercase text-white tracking-wide">
                   Contact Hacklanta Team
                 </h3>
-                <p className="text-text-secondary text-xs">
+                <p className="text-text-secondary text-xs sm:text-sm">
                   Sponsorship inquiries, mentor applications, or questions? Drop us a line.
                 </p>
 
@@ -97,7 +121,7 @@ export default function ContactModal({ isOpen, onClose }) {
                     placeholder="Alex Morgan"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full bg-[#11131c] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-accent-pink transition-colors"
+                    className="w-full bg-[#11131c] border border-white/10 rounded-xl px-4 py-3 sm:py-2.5 text-white text-base sm:text-sm focus:outline-none focus:border-accent-pink transition-colors"
                   />
                 </div>
 
@@ -111,7 +135,7 @@ export default function ContactModal({ isOpen, onClose }) {
                     placeholder="you@domain.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-[#11131c] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-accent-pink transition-colors"
+                    className="w-full bg-[#11131c] border border-white/10 rounded-xl px-4 py-3 sm:py-2.5 text-white text-base sm:text-sm focus:outline-none focus:border-accent-pink transition-colors"
                   />
                 </div>
 
@@ -125,7 +149,7 @@ export default function ContactModal({ isOpen, onClose }) {
                     placeholder="How can we help?"
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    className="w-full bg-[#11131c] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-accent-pink transition-colors resize-none"
+                    className="w-full bg-[#11131c] border border-white/10 rounded-xl px-4 py-3 sm:py-2.5 text-white text-base sm:text-sm focus:outline-none focus:border-accent-pink transition-colors resize-none"
                   />
                 </div>
 
@@ -138,7 +162,7 @@ export default function ContactModal({ isOpen, onClose }) {
                 <button
                   type="submit"
                   disabled={loading}
-                  className={`w-full bg-accent-pink hover:bg-[#ff4b98] text-white font-display text-base uppercase py-3 rounded-full font-bold tracking-wider transition-all shadow-[0_0_20px_rgba(255,46,136,0.4)] flex items-center justify-center gap-2 ${
+                  className={`w-full min-h-[48px] bg-accent-pink hover:bg-[#ff4b98] active:scale-[0.98] text-white font-display text-base uppercase py-3 rounded-full font-bold tracking-wider transition-all shadow-[0_0_20px_rgba(255,46,136,0.4)] flex items-center justify-center gap-2 cursor-pointer mt-2 ${
                     loading ? 'opacity-70 cursor-not-allowed' : ''
                   }`}
                 >
@@ -163,12 +187,13 @@ export default function ContactModal({ isOpen, onClose }) {
                 <h4 className="font-display text-2xl font-black uppercase text-white mb-1">
                   Message Sent!
                 </h4>
-                <p className="text-text-secondary text-xs mb-5">
+                <p className="text-text-secondary text-xs sm:text-sm mb-5">
                   Our organizing team will get back to you within 24 hours.
                 </p>
                 <button
                   onClick={handleClose}
-                  className="bg-surface-muted hover:bg-white/10 text-white font-bold text-xs uppercase tracking-wider px-6 py-2 rounded-full border border-white/20 transition-colors"
+                  type="button"
+                  className="min-h-[44px] bg-surface-muted hover:bg-white/10 active:bg-white/20 text-white font-bold text-xs uppercase tracking-wider px-6 py-2.5 rounded-full border border-white/20 transition-colors inline-flex items-center justify-center cursor-pointer"
                 >
                   Close
                 </button>

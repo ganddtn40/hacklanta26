@@ -127,7 +127,7 @@ export default function Prizes() {
           <div className="text-[12px] text-accent-teal uppercase tracking-widest font-extrabold mb-3">
             Take Something Home
           </div>
-          <h2 className="font-display text-5xl sm:text-6xl lg:text-7xl uppercase font-black text-white leading-none text-stroke-pink-lg">
+          <h2 className="font-display text-4xl sm:text-6xl lg:text-7xl uppercase font-black text-white leading-none text-stroke-pink-lg">
             Prizes
           </h2>
         </motion.div>

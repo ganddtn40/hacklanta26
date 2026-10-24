@@ -1,7 +1,7 @@
 import React from 'react';
-import { ArrowUp, Heart, ShieldCheck, Mail } from 'lucide-react';
+import { ArrowUp, ShieldCheck, Mail } from 'lucide-react';
 
-export default function Footer({ onOpenContact, onOpenCodeOfConduct }) {
+export default function Footer({ onOpenContact }) {
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -19,21 +19,21 @@ export default function Footer({ onOpenContact, onOpenCodeOfConduct }) {
         </div>
 
         {/* Center/Right Links */}
-        <div className="flex flex-wrap items-center justify-center sm:justify-end gap-4 sm:gap-6 text-xs font-bold uppercase tracking-wider">
+        <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2 sm:gap-4 text-xs font-bold uppercase tracking-wider">
           <a
             href="https://static.mlh.io/docs/mlh-code-of-conduct.pdf"
             target="_blank"
             rel="noreferrer"
-            className="text-accent-teal hover:underline transition-all flex items-center gap-1"
+            className="text-accent-teal hover:underline transition-all inline-flex items-center gap-1.5 px-2.5 py-2 min-h-[44px]"
           >
-            <ShieldCheck className="w-3.5 h-3.5" />
+            <ShieldCheck className="w-4 h-4" />
             <span>Code of Conduct</span>
           </a>
           <a
             href="https://mlh.io/privacy"
             target="_blank"
             rel="noreferrer"
-            className="text-text-muted hover:text-white transition-all"
+            className="text-text-muted hover:text-white transition-all inline-flex items-center px-2.5 py-2 min-h-[44px]"
           >
             Privacy Policy
           </a>
@@ -41,21 +41,24 @@ export default function Footer({ onOpenContact, onOpenCodeOfConduct }) {
             href="https://github.com/MLH/mlh-policies/blob/main/member-event-guidelines.md"
             target="_blank"
             rel="noreferrer"
-            className="text-text-muted hover:text-white transition-all"
+            className="text-text-muted hover:text-white transition-all inline-flex items-center px-2.5 py-2 min-h-[44px]"
           >
             Terms
           </a>
           <button
+            type="button"
             onClick={onOpenContact}
-            className="text-accent-teal hover:underline transition-all flex items-center gap-1 cursor-pointer"
+            className="text-accent-teal hover:underline transition-all inline-flex items-center gap-1.5 px-2.5 py-2 min-h-[44px] cursor-pointer"
           >
-            <Mail className="w-3.5 h-3.5" />
+            <Mail className="w-4 h-4" />
             <span>Contact Us</span>
           </button>
           <button
+            type="button"
             onClick={scrollToTop}
-            className="w-8 h-8 rounded-full bg-surface-muted hover:bg-white/10 border border-white/10 flex items-center justify-center text-text-muted hover:text-white transition-colors cursor-pointer"
+            className="w-11 h-11 sm:w-9 sm:h-9 rounded-full bg-surface-muted hover:bg-white/10 active:bg-white/20 border border-white/10 flex items-center justify-center text-text-muted hover:text-white transition-colors cursor-pointer"
             title="Scroll to Top"
+            aria-label="Scroll to Top"
           >
             <ArrowUp className="w-4 h-4" />
           </button>

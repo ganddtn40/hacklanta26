@@ -1,7 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { RotateCw, ArrowRight, X, CheckCircle2, Check, Sparkles, Loader2 } from 'lucide-react';
-import confetti from 'canvas-confetti';
 import { supabase } from '../lib/supabase';
 
 const TRACK_OPTIONS = [
@@ -41,6 +40,7 @@ export default function HeroLanyard3D() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [ticketId, setTicketId] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [isMobile, setIsMobile] = useState(false);
 
   // ── Form State ─────────────────────────────────────────────────────────────
   const [formData, setFormData] = useState({
@@ -64,6 +64,16 @@ export default function HeroLanyard3D() {
   });
 
   const containerRef = useRef(null);
+  const formScrollRef = useRef(null);
+
+  // Detect mobile viewport
+  useEffect(() => {
+    const mql = window.matchMedia('(max-width: 640px)');
+    setIsMobile(mql.matches);
+    const handler = (e) => setIsMobile(e.matches);
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
+  }, []);
 
   // Listen to custom event from Navbar or Track buttons
   useEffect(() => {
@@ -77,7 +87,7 @@ export default function HeroLanyard3D() {
     return () => window.removeEventListener('open-apply-form', handleOpenApply);
   }, []);
 
-  // Spring physics tilt
+  // Spring physics tilt — disabled on mobile for perf
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
   const springConfig = { damping: 24, stiffness: 140, mass: 0.8 };
@@ -94,12 +104,12 @@ export default function HeroLanyard3D() {
 
   const handlePointerMove = useCallback(
     (e) => {
-      if (isDragging || isFlipped || !containerRef.current) return;
+      if (isDragging || isFlipped || isMobile || !containerRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
       mouseX.set(e.clientX - (rect.left + rect.width / 2));
       mouseY.set(e.clientY - (rect.top + rect.height / 2));
     },
-    [isDragging, isFlipped, mouseX, mouseY]
+    [isDragging, isFlipped, isMobile, mouseX, mouseY]
   );
 
   const handlePointerLeave = useCallback(() => {
@@ -113,6 +123,13 @@ export default function HeroLanyard3D() {
     setFormData((prev) => ({ ...prev, [key]: value }));
     if (errorMessage) setErrorMessage('');
   };
+
+  // Scroll form content to top on step change
+  useEffect(() => {
+    if (formScrollRef.current) {
+      formScrollRef.current.scrollTop = 0;
+    }
+  }, [currentStep]);
 
   // Navigasi Step Form
   const handleContinue = async (e) => {
@@ -195,6 +212,9 @@ export default function HeroLanyard3D() {
         setIsSubmitting(false);
         setIsSubmitted(true);
 
+        // Dynamically import confetti only when actually needed
+        const confettiModule = await import('canvas-confetti');
+        const confetti = confettiModule.default;
         confetti({
           particleCount: 120,
           spread: 80,
@@ -230,18 +250,22 @@ export default function HeroLanyard3D() {
 
   const wordCount = formData.essay.trim() ? formData.essay.trim().split(/\s+/).length : 0;
 
+  // Shared input class — font-size: 16px baked in to prevent iOS zoom
+  const inputClass = 'w-full bg-[#EDEBF5] text-[#11121C] font-semibold text-base rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#7B4DFF] transition-all';
+  const selectClass = inputClass;
+
   return (
     <section
       id="home"
       ref={containerRef}
       onPointerMove={handlePointerMove}
       onPointerLeave={handlePointerLeave}
-      className="relative w-full min-h-[820px] flex flex-col items-center justify-start pt-2 select-none overflow-visible"
+      className="relative w-full min-h-[720px] sm:min-h-[820px] flex flex-col items-center justify-start pt-2 select-none overflow-visible"
       style={{ perspective: '1300px' }}
     >
       {/* ── DRAGGABLE BADGE CONTAINER ────────────────────────────────────────── */}
       <motion.div
-        drag={!isFlipped}
+        drag={!isFlipped && !isMobile}
         dragConstraints={{ left: -100, right: 100, top: -20, bottom: 40 }}
         dragElastic={0.25}
         onDragStart={() => setIsDragging(true)}
@@ -259,14 +283,14 @@ export default function HeroLanyard3D() {
           mouseY.set(0);
         }}
         style={{
-          rotateX: isFlipped ? 0 : rotateX,
-          rotateY: isFlipped ? 0 : rotateY,
-          x: springDragX,
-          y: springDragY,
+          rotateX: isFlipped || isMobile ? 0 : rotateX,
+          rotateY: isFlipped || isMobile ? 0 : rotateY,
+          x: isMobile ? 0 : springDragX,
+          y: isMobile ? 0 : springDragY,
           transformStyle: 'preserve-3d',
         }}
-        className={`relative z-30 max-w-[430px] w-[95vw] sm:w-[430px] flex flex-col items-center ${
-          !isFlipped ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'
+        className={`relative z-30 w-[calc(100vw-32px)] max-w-[430px] sm:w-[430px] flex flex-col items-center ${
+          !isFlipped && !isMobile ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'
         }`}
       >
         {/* ── LANYARD STRAP & CLIP (EXTENDED TO TOP OF VIEWPORT) ───────────── */}
@@ -300,14 +324,14 @@ export default function HeroLanyard3D() {
           <motion.div
             animate={{ rotateY: isFlipped ? 180 : 0 }}
             transition={{ duration: 0.7, ease: [0.23, 1, 0.32, 1] }}
-            className="relative w-full h-[670px] sm:h-[690px] rounded-[26px]"
+            className="relative w-full h-[620px] sm:h-[690px] rounded-[26px]"
             style={{ transformStyle: 'preserve-3d' }}
           >
             {/* ══════════════════════════════════════════════════════════════════
                 FRONT FACE: ID CARD / LANYARD BADGE
                ══════════════════════════════════════════════════════════════════ */}
             <div
-              className={`w-full h-full bg-[#080911] rounded-[26px] p-5 sm:p-6 border border-white/12 flex flex-col justify-between items-center relative overflow-hidden transition-opacity duration-300 ${
+              className={`w-full h-full bg-[#080911] rounded-[26px] p-4 sm:p-6 border border-white/12 flex flex-col justify-between items-center relative overflow-hidden transition-opacity duration-300 ${
                 isFlipped ? 'pointer-events-none opacity-0' : 'opacity-100'
               }`}
               style={{
@@ -317,16 +341,18 @@ export default function HeroLanyard3D() {
                   '0 0 0 1px rgba(255,255,255,0.1), 0 0 35px rgba(255,100,50,0.14), 0 20px 50px rgba(0,0,0,0.92)',
               }}
             >
-              {/* Holo shine */}
-              <motion.div
-                className="absolute inset-0 pointer-events-none opacity-[0.12] mix-blend-color-dodge rounded-[26px]"
-                style={{
-                  background:
-                    'linear-gradient(135deg, rgba(255,46,136,0.5), rgba(33,230,215,0.5) 35%, rgba(255,216,61,0.5) 70%, rgba(154,92,255,0.5))',
-                  backgroundPositionX: holoX,
-                  backgroundPositionY: holoY,
-                }}
-              />
+              {/* Holo shine — disabled on mobile */}
+              {!isMobile && (
+                <motion.div
+                  className="absolute inset-0 pointer-events-none opacity-[0.12] mix-blend-color-dodge rounded-[26px]"
+                  style={{
+                    background:
+                      'linear-gradient(135deg, rgba(255,46,136,0.5), rgba(33,230,215,0.5) 35%, rgba(255,216,61,0.5) 70%, rgba(154,92,255,0.5))',
+                    backgroundPositionX: holoX,
+                    backgroundPositionY: holoY,
+                  }}
+                />
+              )}
 
               {/* Punch slot */}
               <div className="w-11 h-1.5 rounded-full bg-black/90 shadow-inner mb-2 border border-white/10" />
@@ -370,7 +396,7 @@ export default function HeroLanyard3D() {
               {/* Wordmark */}
               <div className="my-1 w-full text-center relative select-none flex items-center justify-center">
                 <div className="relative inline-block">
-                  <h1 className="font-wordmark text-[50px] sm:text-[56px] font-black lowercase tracking-[-0.04em] text-white leading-none drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]">
+                  <h1 className="font-wordmark text-[44px] sm:text-[56px] font-black lowercase tracking-[-0.04em] text-white leading-none drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]">
                     hacklanta
                   </h1>
                   <span className="absolute -top-1 -right-5 text-accent-pink text-lg animate-bounce">
@@ -405,18 +431,18 @@ export default function HeroLanyard3D() {
                     >
                       {label}
                     </span>
-                    <span className="font-display text-lg sm:text-xl font-black text-white tracking-wide mt-0.5 leading-tight">
+                    <span className="font-display text-base sm:text-xl font-black text-white tracking-wide mt-0.5 leading-tight">
                       {val}
                     </span>
                   </div>
                 ))}
               </div>
 
-              {/* Illustration strip */}
-              <div className="w-full bg-[#0b0c16] border border-white/5 rounded-xl p-2 my-1 relative overflow-hidden flex items-end justify-between min-h-[86px]">
+              {/* Illustration strip — simplified on very small screens */}
+              <div className="w-full bg-[#0b0c16] border border-white/5 rounded-xl p-2 my-1 relative overflow-hidden flex items-end justify-between min-h-[70px] sm:min-h-[86px]">
                 <div className="absolute inset-0 bg-gradient-to-t from-[#121422] to-transparent pointer-events-none" />
                 {/* VW Van */}
-                <div className="relative z-10 w-24 sm:w-28 flex flex-col items-center">
+                <div className="relative z-10 w-20 sm:w-28 flex flex-col items-center">
                   <svg viewBox="0 0 160 120" className="w-full drop-shadow-md">
                     <path
                       d="M25 50 Q25 32 45 30 L115 30 Q135 32 135 50 Z"
@@ -470,7 +496,7 @@ export default function HeroLanyard3D() {
                 </div>
                 {/* Shrubs */}
                 <div className="relative z-10 flex items-center -mx-1 -mb-1">
-                  <svg viewBox="0 0 60 40" className="w-11 h-8">
+                  <svg viewBox="0 0 60 40" className="w-9 sm:w-11 h-6 sm:h-8">
                     <circle cx="15" cy="25" r="13" fill="#3DDC84" />
                     <circle cx="34" cy="22" r="15" fill="#2ECC71" />
                     <circle cx="47" cy="28" r="9" fill="#27AE60" />
@@ -478,7 +504,7 @@ export default function HeroLanyard3D() {
                 </div>
                 {/* Dome + Flower */}
                 <div className="relative z-10 flex items-end">
-                  <svg viewBox="0 0 100 70" className="w-16 h-12 -mr-3">
+                  <svg viewBox="0 0 100 70" className="w-12 sm:w-16 h-9 sm:h-12 -mr-3">
                     <ellipse
                       cx="50"
                       cy="55"
@@ -508,7 +534,7 @@ export default function HeroLanyard3D() {
                       strokeWidth="1.5"
                     />
                   </svg>
-                  <svg viewBox="0 0 80 80" className="w-11 h-11 relative z-20">
+                  <svg viewBox="0 0 80 80" className="w-9 sm:w-11 h-9 sm:h-11 relative z-20">
                     <g transform="translate(40,40)">
                       {[0, 45, 90, 135, 180, 225, 270, 315].map((a, i) => (
                         <ellipse
@@ -535,7 +561,7 @@ export default function HeroLanyard3D() {
                   e.stopPropagation();
                   setIsFlipped(true);
                 }}
-                className="w-full bg-[#FFD83D] hover:bg-[#FFE36A] active:scale-[0.98] text-[#0A0B16] rounded-full py-2.5 sm:py-3 px-5 flex items-center justify-between font-display text-base uppercase tracking-wider font-black shadow-[0_0_28px_rgba(255,216,61,0.5)] hover:shadow-[0_0_40px_rgba(255,216,61,0.7)] transition-all group mt-1"
+                className="w-full bg-[#FFD83D] hover:bg-[#FFE36A] active:scale-[0.98] text-[#0A0B16] rounded-full py-3 px-5 flex items-center justify-between font-display text-base uppercase tracking-wider font-black shadow-[0_0_28px_rgba(255,216,61,0.5)] hover:shadow-[0_0_40px_rgba(255,216,61,0.7)] transition-all group mt-1 min-h-[48px]"
               >
                 <span className="mx-auto pl-5 font-black">Launch application</span>
                 <div className="w-7 h-7 rounded-full bg-[#0A0B16] flex items-center justify-center text-[#FFD83D] group-hover:translate-x-1 transition-transform shrink-0">
@@ -551,7 +577,7 @@ export default function HeroLanyard3D() {
                     e.stopPropagation();
                     setIsFlipped(true);
                   }}
-                  className="text-[11px] text-[#FFD83D] hover:text-white underline font-bold transition-colors tracking-wide flex items-center justify-center gap-1.5 mx-auto"
+                  className="text-[11px] text-[#FFD83D] hover:text-white underline font-bold transition-colors tracking-wide flex items-center justify-center gap-1.5 mx-auto min-h-[44px]"
                 >
                   <RotateCw className="w-3 h-3" />
                   <span>Click card to Register (Flip 3D)</span>
@@ -563,7 +589,7 @@ export default function HeroLanyard3D() {
                 BACK FACE: 8-STEP PARTICIPANT APPLICATION FORM
                ══════════════════════════════════════════════════════════════════ */}
             <div
-              className={`absolute inset-0 w-full h-full rounded-[26px] p-4 sm:p-5 flex flex-col justify-between overflow-hidden transition-opacity duration-300 ${
+              className={`absolute inset-0 w-full h-full rounded-[26px] p-3 sm:p-5 flex flex-col justify-between overflow-hidden transition-opacity duration-300 ${
                 !isFlipped ? 'pointer-events-none opacity-0' : 'opacity-100'
               }`}
               style={{
@@ -591,18 +617,18 @@ export default function HeroLanyard3D() {
                   <button
                     type="button"
                     onClick={() => setIsFlipped(false)}
-                    className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 flex items-center justify-center text-white/80 hover:text-white transition-all"
+                    className="w-10 h-10 sm:w-7 sm:h-7 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 flex items-center justify-center text-white/80 hover:text-white transition-all min-w-[44px] min-h-[44px]"
                     title="Flip back to ID Card"
                     aria-label="Close form"
                   >
-                    <X className="w-4 h-4 stroke-[2.5]" />
+                    <X className="w-5 h-5 sm:w-4 sm:h-4 stroke-[2.5]" />
                   </button>
                 </div>
 
                 {!isSubmitted && (
                   <div className="w-full text-left">
                     {/* Title */}
-                    <h2 className="font-wordmark text-2xl sm:text-[26px] font-black text-[#FFD83D] tracking-tight leading-tight">
+                    <h2 className="font-wordmark text-xl sm:text-[26px] font-black text-[#FFD83D] tracking-tight leading-tight">
                       Participant application
                     </h2>
 
@@ -626,7 +652,7 @@ export default function HeroLanyard3D() {
                     </div>
 
                     {/* Step Subtitle */}
-                    <h3 className="font-sans text-lg sm:text-xl font-black text-white tracking-tight mb-1">
+                    <h3 className="font-sans text-base sm:text-xl font-black text-white tracking-tight mb-1">
                       {currentStep === 1 && 'Your identity'}
                       {currentStep === 2 && 'Contact & Online Profiles'}
                       {currentStep === 3 && 'Education & Role'}
@@ -672,15 +698,19 @@ export default function HeroLanyard3D() {
                   <button
                     type="button"
                     onClick={resetForm}
-                    className="w-full max-w-[280px] py-2.5 px-4 rounded-full font-bold text-xs text-[#0c0d16] bg-[#FFD83D] hover:bg-[#FFE36A] transition-all flex items-center justify-center gap-1.5 shadow-[0_4px_0_#7C4DFF]"
+                    className="w-full max-w-[280px] py-3 px-4 rounded-full font-bold text-xs text-[#0c0d16] bg-[#FFD83D] hover:bg-[#FFE36A] transition-all flex items-center justify-center gap-1.5 shadow-[0_4px_0_#7C4DFF] min-h-[48px]"
                   >
                     <RotateCw className="w-3.5 h-3.5" />
                     <span>Back to ID Card</span>
                   </button>
                 </div>
               ) : (
-                /* Form Steps Container (flex-1 min-h-0 makes it strictly scrollable) */
-                <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-1 py-1 space-y-2.5">
+                /* Form Steps Container — overflow-y: auto with padding for keyboard */
+                <div
+                  ref={formScrollRef}
+                  className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-1 py-1 space-y-2.5 pb-4"
+                  style={{ WebkitOverflowScrolling: 'touch' }}
+                >
                   {/* STEP 1: Your Identity */}
                   {currentStep === 1 && (
                     <div className="space-y-2.5">
@@ -694,7 +724,7 @@ export default function HeroLanyard3D() {
                           placeholder="Alex"
                           value={formData.firstName}
                           onChange={(e) => updateField('firstName', e.target.value)}
-                          className="w-full bg-[#EDEBF5] text-[#11121C] font-semibold text-sm rounded-xl px-3.5 py-2 focus:outline-none focus:ring-2 focus:ring-[#7B4DFF] transition-all"
+                          className={inputClass}
                         />
                         <p className="text-[10px] text-gray-400 mt-0.5">
                           Use the name you want organizers to use.
@@ -711,7 +741,7 @@ export default function HeroLanyard3D() {
                           placeholder="Mercer"
                           value={formData.lastName}
                           onChange={(e) => updateField('lastName', e.target.value)}
-                          className="w-full bg-[#EDEBF5] text-[#11121C] font-semibold text-sm rounded-xl px-3.5 py-2 focus:outline-none focus:ring-2 focus:ring-[#7B4DFF] transition-all"
+                          className={inputClass}
                         />
                         <p className="text-[10px] text-gray-400 mt-0.5">
                           Use the name you want organizers to use.
@@ -727,7 +757,7 @@ export default function HeroLanyard3D() {
                           placeholder="+1 (404) 555-0199"
                           value={formData.phone}
                           onChange={(e) => updateField('phone', e.target.value)}
-                          className="w-full bg-[#EDEBF5] text-[#11121C] font-semibold text-sm rounded-xl px-3.5 py-2 focus:outline-none focus:ring-2 focus:ring-[#7B4DFF] transition-all"
+                          className={inputClass}
                         />
                         <p className="text-[10px] text-gray-400 mt-0.5">
                           Include a country code if outside the United States.
@@ -749,7 +779,7 @@ export default function HeroLanyard3D() {
                           placeholder="alex.mercer@gatech.edu"
                           value={formData.email}
                           onChange={(e) => updateField('email', e.target.value)}
-                          className="w-full bg-[#EDEBF5] text-[#11121C] font-semibold text-sm rounded-xl px-3.5 py-2 focus:outline-none focus:ring-2 focus:ring-[#7B4DFF] transition-all"
+                          className={inputClass}
                         />
                         <p className="text-[10px] text-gray-400 mt-0.5">
                           We will send updates and match details here.
@@ -765,7 +795,7 @@ export default function HeroLanyard3D() {
                           placeholder="alexmercer-dev"
                           value={formData.github}
                           onChange={(e) => updateField('github', e.target.value)}
-                          className="w-full bg-[#EDEBF5] text-[#11121C] font-semibold text-sm rounded-xl px-3.5 py-2 focus:outline-none focus:ring-2 focus:ring-[#7B4DFF] transition-all"
+                          className={inputClass}
                         />
                         <p className="text-[10px] text-gray-400 mt-0.5">
                           Your code repository profile.
@@ -781,7 +811,7 @@ export default function HeroLanyard3D() {
                           placeholder="https://linkedin.com/in/alexmercer"
                           value={formData.linkedin}
                           onChange={(e) => updateField('linkedin', e.target.value)}
-                          className="w-full bg-[#EDEBF5] text-[#11121C] font-semibold text-sm rounded-xl px-3.5 py-2 focus:outline-none focus:ring-2 focus:ring-[#7B4DFF] transition-all"
+                          className={inputClass}
                         />
                         <p className="text-[10px] text-gray-400 mt-0.5">
                           Link to your professional profile.
@@ -800,7 +830,7 @@ export default function HeroLanyard3D() {
                         <select
                           value={formData.role}
                           onChange={(e) => updateField('role', e.target.value)}
-                          className="w-full bg-[#EDEBF5] text-[#11121C] font-semibold text-sm rounded-xl px-3.5 py-2 focus:outline-none focus:ring-2 focus:ring-[#7B4DFF] transition-all"
+                          className={selectClass}
                         >
                           {ROLE_OPTIONS.map((opt) => (
                             <option key={opt} value={opt}>
@@ -819,7 +849,7 @@ export default function HeroLanyard3D() {
                           placeholder="Georgia Institute of Technology"
                           value={formData.school}
                           onChange={(e) => updateField('school', e.target.value)}
-                          className="w-full bg-[#EDEBF5] text-[#11121C] font-semibold text-sm rounded-xl px-3.5 py-2 focus:outline-none focus:ring-2 focus:ring-[#7B4DFF] transition-all"
+                          className={inputClass}
                         />
                       </div>
 
@@ -830,7 +860,7 @@ export default function HeroLanyard3D() {
                         <select
                           value={formData.gradYear}
                           onChange={(e) => updateField('gradYear', e.target.value)}
-                          className="w-full bg-[#EDEBF5] text-[#11121C] font-semibold text-sm rounded-xl px-3.5 py-2 focus:outline-none focus:ring-2 focus:ring-[#7B4DFF] transition-all"
+                          className={selectClass}
                         >
                           {GRAD_YEAR_OPTIONS.map((opt) => (
                             <option key={opt} value={opt}>
@@ -855,7 +885,7 @@ export default function HeroLanyard3D() {
                               key={tr}
                               type="button"
                               onClick={() => updateField('track', tr)}
-                              className={`py-1.5 px-2.5 rounded-xl text-xs font-bold transition-all text-left flex items-center justify-between border ${
+                              className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all text-left flex items-center justify-between border min-h-[44px] ${
                                 formData.track === tr
                                   ? 'bg-[#FFD83D] text-[#0A0B16] border-[#FFD83D] shadow-[0_0_12px_rgba(255,216,61,0.4)]'
                                   : 'bg-[#121320] text-gray-300 border-white/10 hover:border-white/20'
@@ -877,7 +907,7 @@ export default function HeroLanyard3D() {
                           placeholder="React, Next.js, Python, Docker"
                           value={formData.techStack}
                           onChange={(e) => updateField('techStack', e.target.value)}
-                          className="w-full bg-[#EDEBF5] text-[#11121C] font-semibold text-sm rounded-xl px-3.5 py-2 focus:outline-none focus:ring-2 focus:ring-[#7B4DFF] transition-all"
+                          className={inputClass}
                         />
                         <p className="text-[10px] text-gray-400 mt-0.5">
                           Separate tools with commas (e.g. React, PyTorch, Go).
@@ -900,7 +930,7 @@ export default function HeroLanyard3D() {
                           ].map((opt) => (
                             <label
                               key={opt.id}
-                              className={`flex items-center gap-2.5 p-2.5 rounded-xl border cursor-pointer transition-all ${
+                              className={`flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition-all min-h-[48px] ${
                                 formData.hasTeam === opt.id
                                   ? 'bg-[#151728] border-accent-teal text-white shadow-[0_0_12px_rgba(34,227,200,0.2)]'
                                   : 'bg-[#0E101D] border-white/10 text-gray-400 hover:border-white/20'
@@ -929,7 +959,7 @@ export default function HeroLanyard3D() {
                             placeholder="e.g. PeachState Hackers"
                             value={formData.teamName}
                             onChange={(e) => updateField('teamName', e.target.value)}
-                            className="w-full bg-[#EDEBF5] text-[#11121C] font-semibold text-sm rounded-xl px-3.5 py-2 focus:outline-none focus:ring-2 focus:ring-[#7B4DFF] transition-all"
+                            className={inputClass}
                           />
                           <p className="text-[10px] text-gray-400 mt-0.5">
                             Your teammates can enter the same name to be grouped together.
@@ -952,7 +982,7 @@ export default function HeroLanyard3D() {
                               key={size}
                               type="button"
                               onClick={() => updateField('tshirt', size)}
-                              className={`py-1.5 rounded-xl text-xs font-black transition-all border ${
+                              className={`py-2 rounded-xl text-xs font-black transition-all border min-h-[44px] ${
                                 formData.tshirt === size
                                   ? 'bg-[#FFD83D] text-[#0A0B16] border-[#FFD83D] shadow-[0_0_10px_rgba(255,216,61,0.4)]'
                                   : 'bg-[#121320] text-gray-300 border-white/10 hover:border-white/20'
@@ -973,7 +1003,7 @@ export default function HeroLanyard3D() {
                           placeholder="Halal, Vegetarian, Vegan, Peanut Allergy, None"
                           value={formData.dietary}
                           onChange={(e) => updateField('dietary', e.target.value)}
-                          className="w-full bg-[#EDEBF5] text-[#11121C] font-semibold text-sm rounded-xl px-3.5 py-2 focus:outline-none focus:ring-2 focus:ring-[#7B4DFF] transition-all"
+                          className={inputClass}
                         />
                         <p className="text-[10px] text-gray-400 mt-0.5">
                           All meals, snacks, and midnight pizzas are covered for 36 hours.
@@ -999,7 +1029,7 @@ export default function HeroLanyard3D() {
                           }
                         }}
                         placeholder="Tell us what excites you to build at Hacklanta '26 (e.g. autonomous drone CV, local AI models, creative dev tools)..."
-                        className="w-full bg-[#EDEBF5] text-[#11121C] font-medium text-xs sm:text-sm rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-[#7B4DFF] transition-all resize-none"
+                        className="w-full bg-[#EDEBF5] text-[#11121C] font-medium text-base rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-[#7B4DFF] transition-all resize-none"
                       />
                       <div className="flex items-center justify-between text-[10px] text-gray-400">
                         <span>Max 200 words</span>
@@ -1043,12 +1073,12 @@ export default function HeroLanyard3D() {
                         </div>
                       </div>
 
-                      <label className="flex items-start gap-2 p-2 rounded-xl bg-[#0F101C] border border-white/10 cursor-pointer">
+                      <label className="flex items-start gap-2 p-2.5 rounded-xl bg-[#0F101C] border border-white/10 cursor-pointer min-h-[48px]">
                         <input
                           type="checkbox"
                           checked={formData.agreedToCoC}
                           onChange={(e) => updateField('agreedToCoC', e.target.checked)}
-                          className="mt-0.5 w-4 h-4 accent-[#FFD83D] rounded cursor-pointer shrink-0"
+                          className="mt-0.5 w-5 h-5 accent-[#FFD83D] rounded cursor-pointer shrink-0"
                         />
                         <span className="text-[11px] text-gray-300 leading-snug">
                           I agree to the Hacklanta '26{' '}
@@ -1086,15 +1116,15 @@ export default function HeroLanyard3D() {
                 </div>
               )}
 
-              {/* ── CARD FOOTER: FIXED DOCK ACTION BAR (Always visible at bottom with safe padding) ── */}
+              {/* ── CARD FOOTER: FIXED DOCK ACTION BAR ── */}
               {!isSubmitted && (
-                <div className="flex-shrink-0 w-full pt-2 pb-2 sm:pb-3">
+                <div className="flex-shrink-0 w-full pt-2 pb-2 sm:pb-3 mobile-keyboard-safe">
                   <div className="bg-[#0e0f18]/95 backdrop-blur-md border border-white/10 p-2 sm:p-2.5 rounded-2xl flex items-center gap-2.5 w-full shadow-xl">
                     {/* Back Button */}
                     <button
                       type="button"
                       onClick={handleBack}
-                      className="flex-1 py-2.5 px-4 rounded-full font-bold text-xs sm:text-sm text-[#0c0d16] bg-[#FFD83D] hover:bg-[#FFE36A] active:translate-y-0.5 shadow-[0_4px_0_#6A42E6] hover:shadow-[0_2px_0_#6A42E6] transition-all text-center flex items-center justify-center cursor-pointer"
+                      className="flex-1 py-3 px-4 rounded-full font-bold text-xs sm:text-sm text-[#0c0d16] bg-[#FFD83D] hover:bg-[#FFE36A] active:translate-y-0.5 shadow-[0_4px_0_#6A42E6] hover:shadow-[0_2px_0_#6A42E6] transition-all text-center flex items-center justify-center cursor-pointer min-h-[48px]"
                     >
                       Back
                     </button>
@@ -1104,7 +1134,7 @@ export default function HeroLanyard3D() {
                       <button
                         type="button"
                         onClick={handleContinue}
-                        className="flex-1 py-2.5 px-4 rounded-full font-bold text-xs sm:text-sm text-[#0c0d16] bg-[#FFD83D] hover:bg-[#FFE36A] active:translate-y-0.5 shadow-[0_4px_0_#6A42E6] hover:shadow-[0_2px_0_#6A42E6] transition-all text-center flex items-center justify-center gap-1 cursor-pointer"
+                        className="flex-1 py-3 px-4 rounded-full font-bold text-xs sm:text-sm text-[#0c0d16] bg-[#FFD83D] hover:bg-[#FFE36A] active:translate-y-0.5 shadow-[0_4px_0_#6A42E6] hover:shadow-[0_2px_0_#6A42E6] transition-all text-center flex items-center justify-center gap-1 cursor-pointer min-h-[48px]"
                       >
                         <span>Continue</span>
                         <ArrowRight className="w-3.5 h-3.5 stroke-[3]" />
@@ -1114,19 +1144,19 @@ export default function HeroLanyard3D() {
                         type="button"
                         disabled={isSubmitting}
                         onClick={handleContinue}
-                        className={`flex-1 py-2.5 px-4 rounded-full font-black text-xs sm:text-sm text-[#0A0B16] bg-gradient-to-r from-[#A6E82B] via-[#FFD83D] to-[#3DDC84] hover:brightness-110 active:translate-y-0.5 shadow-[0_4px_0_#289E5B] hover:shadow-[0_2px_0_#289E5B] transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer ${
+                        className={`flex-1 py-3 px-4 rounded-full font-black text-xs sm:text-sm text-[#0A0B16] bg-gradient-to-r from-[#A6E82B] via-[#FFD83D] to-[#3DDC84] hover:brightness-110 active:translate-y-0.5 shadow-[0_4px_0_#289E5B] hover:shadow-[0_2px_0_#289E5B] transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer min-h-[48px] ${
                           isSubmitting ? 'opacity-70 cursor-not-allowed' : 'animate-pulse'
                         }`}
                       >
                         {isSubmitting ? (
                           <>
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            <span>Submitting Application...</span>
+                            <span>Submitting...</span>
                           </>
                         ) : (
                           <>
                             <Sparkles className="w-3.5 h-3.5" />
-                            <span>Submit Application</span>
+                            <span>Submit</span>
                           </>
                         )}
                       </button>
@@ -1143,7 +1173,7 @@ export default function HeroLanyard3D() {
           <button
             type="button"
             onClick={() => setIsFlipped((f) => !f)}
-            className="flex items-center gap-1.5 hover:text-white transition-colors"
+            className="flex items-center gap-1.5 hover:text-white transition-colors min-h-[44px]"
           >
             <RotateCw className="w-3.5 h-3.5 text-accent-teal" />
             <span>{isFlipped ? 'Flip to front ID badge' : 'Flip to 8-step application'}</span>
@@ -1158,12 +1188,12 @@ export default function HeroLanyard3D() {
         transition={{ duration: 0.5, delay: 0.2 }}
         className="flex flex-col items-center gap-3 mt-6 z-20"
       >
-        <div className="flex items-center gap-2 flex-wrap justify-center">
+        <div className="flex items-center gap-2 flex-wrap justify-center px-4">
           {['MLH Official Event', 'Oct 9–11 2026', 'ATL Tech Square', '$45K+ Prizes'].map(
             (tag, i) => (
               <span
                 key={i}
-                className="px-3.5 py-1 text-[10px] uppercase font-bold tracking-widest rounded-full border border-white/12 text-text-muted bg-white/3 backdrop-blur-sm shadow-sm"
+                className="px-3 py-1.5 text-[10px] uppercase font-bold tracking-widest rounded-full border border-white/12 text-text-muted bg-white/3 backdrop-blur-sm shadow-sm"
               >
                 {tag}
               </span>

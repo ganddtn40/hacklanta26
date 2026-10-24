@@ -47,7 +47,7 @@ export default function WhatIsHacklanta() {
             <span className="w-2.5 h-2.5 rounded-full bg-accent-teal animate-pulse" />
             A Weekend Built at Full Volume
           </div>
-          <h2 className="font-display text-5xl sm:text-6xl lg:text-7xl uppercase font-black tracking-tight text-white leading-[0.92] text-stroke-pink-lg">
+          <h2 className="font-display text-4xl sm:text-6xl lg:text-7xl uppercase font-black tracking-tight text-white leading-[0.92] text-stroke-pink-lg">
             What is<br />Hacklanta?
           </h2>
         </motion.div>
@@ -77,19 +77,19 @@ export default function WhatIsHacklanta() {
         transition={{ duration: 0.5, delay: 0.25 }}
         className="w-full bg-[#0E1020]/90 border border-white/10 rounded-2xl p-4 sm:p-5 flex flex-wrap items-center justify-between gap-3 text-center sm:text-left shadow-[0_10px_30px_rgba(0,0,0,0.6)] backdrop-blur-md"
       >
-        <div className="flex items-center gap-2 text-white font-display text-sm uppercase tracking-wider font-bold">
+        <div className="flex items-center gap-2 text-white font-display text-xs sm:text-sm uppercase tracking-wider font-bold">
           <span className="text-primary-container text-lg font-black">•</span>
           OCT 9–11
         </div>
-        <div className="flex items-center gap-2 text-white font-display text-sm uppercase tracking-wider font-bold">
+        <div className="flex items-center gap-2 text-white font-display text-xs sm:text-sm uppercase tracking-wider font-bold">
           <span className="text-accent-teal text-lg font-black">•</span>
           ATL TECH SQUARE
         </div>
-        <div className="flex items-center gap-2 text-white font-display text-sm uppercase tracking-wider font-bold">
+        <div className="flex items-center gap-2 text-white font-display text-xs sm:text-sm uppercase tracking-wider font-bold">
           <span className="text-accent-pink text-lg font-black">•</span>
           1,000+ STUDENTS ACROSS THE US
         </div>
-        <div className="flex items-center gap-2 text-[#3DDC84] font-display text-sm uppercase tracking-wider font-bold">
+        <div className="flex items-center gap-2 text-[#3DDC84] font-display text-xs sm:text-sm uppercase tracking-wider font-bold">
           <span className="text-[#3DDC84] text-lg font-black">•</span>
           FREE FOR ACCEPTED PARTICIPANTS
         </div>
@@ -97,8 +97,8 @@ export default function WhatIsHacklanta() {
 
       {/* LIVE EVENT COUNTDOWN MODULE */}
       <div className="w-full bg-gradient-to-r from-[#0E1020] via-[#151728] to-[#0E1020] border border-accent-teal/20 rounded-2xl p-4 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-[0_0_25px_rgba(34,227,200,0.12)]">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-accent-teal/10 border border-accent-teal/30 flex items-center justify-center text-accent-teal">
+        <div className="flex items-center gap-3 text-center sm:text-left">
+          <div className="w-10 h-10 shrink-0 rounded-xl bg-accent-teal/10 border border-accent-teal/30 flex items-center justify-center text-accent-teal">
             <Clock className="w-5 h-5 animate-spin" style={{ animationDuration: '30s' }} />
           </div>
           <div>
@@ -108,18 +108,18 @@ export default function WhatIsHacklanta() {
         </div>
 
         {/* Digit Tiles */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3 justify-center w-full sm:w-auto">
           {[
             { label: 'DAYS', val: timeLeft.days },
             { label: 'HOURS', val: timeLeft.hours },
             { label: 'MINUTES', val: timeLeft.minutes },
             { label: 'SECONDS', val: timeLeft.seconds },
           ].map((item, idx) => (
-            <div key={idx} className="bg-[#07070C] border border-white/10 rounded-xl px-3 py-2 text-center min-w-[58px]">
-              <div className="font-display text-2xl sm:text-3xl font-black text-white leading-none">
+            <div key={idx} className="bg-[#07070C] border border-white/10 rounded-xl px-2.5 py-2 text-center min-w-[50px] sm:min-w-[58px]">
+              <div className="font-display text-xl sm:text-3xl font-black text-white leading-none">
                 {String(item.val).padStart(2, '0')}
               </div>
-              <div className="text-[9px] uppercase tracking-wider text-text-muted mt-1 font-bold">
+              <div className="text-[8px] sm:text-[9px] uppercase tracking-wider text-text-muted mt-1 font-bold">
                 {item.label}
               </div>
             </div>

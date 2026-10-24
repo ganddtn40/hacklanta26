@@ -136,7 +136,7 @@ export default function Sponsors({ onOpenContact, onOpenPartner }) {
             <Sparkles className="w-3.5 h-3.5 text-accent-teal" />
             <span>Future Frequencies</span>
           </div>
-          <h2 className="font-display text-5xl sm:text-6xl lg:text-7xl uppercase font-black text-white leading-none text-stroke-pink-lg">
+          <h2 className="font-display text-4xl sm:text-6xl lg:text-7xl uppercase font-black text-white leading-none text-stroke-pink-lg">
             Sponsors
           </h2>
         </motion.div>
@@ -169,7 +169,7 @@ export default function Sponsors({ onOpenContact, onOpenPartner }) {
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
               whileHover={{ y: -4 }}
-              className="bg-[#0A0B16] border border-white/10 rounded-2xl p-8 sm:p-12 flex flex-col items-center justify-center shadow-lg hover:border-white/25 transition-all relative overflow-hidden group cursor-pointer"
+              className="bg-[#0A0B16] border border-white/10 rounded-2xl p-6 sm:p-12 flex flex-col items-center justify-center shadow-lg hover:border-white/25 transition-all relative overflow-hidden group cursor-pointer"
               style={{ boxShadow: `0 0 40px ${p.glow}` }}
             >
               <div
@@ -213,10 +213,10 @@ export default function Sponsors({ onOpenContact, onOpenPartner }) {
           <button
             type="button"
             onClick={handlePartnerClick}
-            className="text-xs text-accent-teal hover:underline font-bold flex items-center gap-1 uppercase tracking-wider transition-all cursor-pointer"
+            className="text-xs text-accent-teal hover:underline font-bold inline-flex items-center gap-1 uppercase tracking-wider transition-all cursor-pointer min-h-[44px] px-1"
           >
             <span>Become a partner</span>
-            <ArrowUpRight className="w-3 h-3" />
+            <ArrowUpRight className="w-3.5 h-3.5" />
           </button>
         </div>
 

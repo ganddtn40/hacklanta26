@@ -135,7 +135,7 @@ export default function Tracks({ onSelectTrack }) {
           <div className="text-[12px] text-accent-teal uppercase tracking-widest font-extrabold mb-3">
             Pick Your Stage
           </div>
-          <h2 className="font-display text-5xl sm:text-6xl lg:text-7xl uppercase font-black text-white leading-none text-stroke-pink-lg">
+          <h2 className="font-display text-4xl sm:text-6xl lg:text-7xl uppercase font-black text-white leading-none text-stroke-pink-lg">
             Tracks
           </h2>
         </motion.div>
@@ -168,7 +168,7 @@ export default function Tracks({ onSelectTrack }) {
             >
               {/* Main Track Card (3 Cols) */}
               <div 
-                className={`lg:col-span-3 bg-[#0A0B16] rounded-2xl p-6 sm:p-7 relative overflow-hidden transition-all duration-300 ${track.borderColorClass} flex flex-col justify-between group hover:bg-[#0E1020]`}
+                className={`lg:col-span-3 bg-[#0A0B16] rounded-2xl p-5 sm:p-7 relative overflow-hidden transition-all duration-300 ${track.borderColorClass} flex flex-col justify-between group hover:bg-[#0E1020]`}
               >
                 <div 
                   className="absolute -right-20 -bottom-20 w-64 h-64 rounded-full opacity-15 pointer-events-none blur-3xl transition-opacity group-hover:opacity-30"
@@ -201,8 +201,9 @@ export default function Tracks({ onSelectTrack }) {
                     Eligible for Track Grand Prize + Swag
                   </span>
                   <button
+                    type="button"
                     onClick={() => onSelectTrack?.(track.title)}
-                    className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider hover:underline"
+                    className="min-h-[44px] px-2 py-1 inline-flex items-center gap-1 text-xs font-bold uppercase tracking-wider hover:underline cursor-pointer"
                     style={{ color: track.color }}
                   >
                     <span>View Matrix</span>

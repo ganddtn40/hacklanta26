@@ -6,6 +6,9 @@
   html {
     scroll-behavior: smooth;
     color-scheme: dark;
+    /* Prevent iOS font size inflation */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
   body {
     margin: 0;
@@ -14,6 +17,20 @@
     color: #FFFFFF;
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     overflow-x: hidden;
+    /* Prevent horizontal overflow leaks */
+    max-width: 100vw;
+  }
+
+  /* ── Prevent iOS Safari zoom on input focus ── */
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+
+  /* ── Root wrapper overflow guard ── */
+  #root {
+    overflow-x: hidden;
+    max-width: 100vw;
+    position: relative;
   }
 }
 
@@ -128,4 +145,76 @@
 }
 .animate-shake {
   animation: shake 0.3s ease-in-out;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MOBILE PERFORMANCE & RESPONSIVENESS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Reduced Motion: Kill all heavy animations ── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .ribbon {
+    stroke-dashoffset: 0 !important;
+  }
+}
+
+/* ── Hardware-Accelerated Animation Hints ── */
+.will-change-transform {
+  will-change: transform;
+}
+.will-change-opacity {
+  will-change: opacity;
+}
+
+/* ── Touch Target Enforcement (44x44px minimum per WCAG / Apple HIG) ── */
+@media (pointer: coarse) {
+  button,
+  [role="button"],
+  a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* ── Mobile Viewport Safety ── */
+@media (max-width: 768px) {
+  /* Reduce heavy text shadows on mobile to save compositing */
+  .text-stroke-pink {
+    text-shadow: 2px 2px 0 #FF2E88;
+  }
+  .text-stroke-pink-lg {
+    text-shadow: 3px 3px 0 #FF2E88;
+  }
+  /* Reduce neon border glow intensity on mobile */
+  .neon-border-blue,
+  .neon-border-pink,
+  .neon-border-purple,
+  .neon-border-green,
+  .neon-border-gold,
+  .neon-border-orange {
+    box-shadow: none;
+  }
+}
+
+/* ── Mobile Keyboard-safe form padding ── */
+@media (max-width: 640px) {
+  .mobile-keyboard-safe {
+    padding-bottom: env(safe-area-inset-bottom, 20px);
+  }
+}
+
+/* ── iOS Safe Area support ── */
+@supports (padding: max(0px)) {
+  body {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
 }

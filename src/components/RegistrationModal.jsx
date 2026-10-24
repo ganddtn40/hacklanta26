@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, CheckCircle2, Sparkles, QrCode, ArrowRight, UserCheck, Loader2 } from 'lucide-react';
-import confetti from 'canvas-confetti';
+import { X, CheckCircle2, Sparkles, QrCode, ArrowRight, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 export default function RegistrationModal({ isOpen, onClose, initialTrack }) {
@@ -16,6 +15,17 @@ export default function RegistrationModal({ isOpen, onClose, initialTrack }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [ticketId, setTicketId] = useState('');
+
+  // Lock body scroll on mobile when modal is active
+  useEffect(() => {
+    if (isOpen) {
+      const originalStyle = window.getComputedStyle(document.body).overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalStyle;
+      };
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (initialTrack) {
@@ -76,13 +86,19 @@ export default function RegistrationModal({ isOpen, onClose, initialTrack }) {
       setIsSubmitting(false);
       setIsSubmitted(true);
 
-      // Fire festival rainbow confetti
-      confetti({
-        particleCount: 120,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ['#FF6A2B', '#FF4B5C', '#E83E8C', '#FFD23F', '#3DDC84', '#19C5C0', '#2F6BFF', '#7B4DFF']
-      });
+      // Dynamically load confetti only when submission succeeds (saves initial bundle)
+      try {
+        const confettiModule = await import('canvas-confetti');
+        const confetti = confettiModule.default || confettiModule;
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#FF6A2B', '#FF4B5C', '#E83E8C', '#FFD23F', '#3DDC84', '#19C5C0', '#2F6BFF', '#7B4DFF']
+        });
+      } catch (confettiErr) {
+        console.warn('Confetti animation failed:', confettiErr);
+      }
     } catch (err) {
       setIsSubmitting(false);
       setErrorMessage(err.message || 'An unexpected error occurred. Please try again.');
@@ -98,14 +114,14 @@ export default function RegistrationModal({ isOpen, onClose, initialTrack }) {
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
           {/* Backdrop Blur */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-black/80 backdrop-blur-md"
+            className="fixed inset-0 bg-black/80 backdrop-blur-md"
           />
 
           {/* Modal Container */}
@@ -113,26 +129,28 @@ export default function RegistrationModal({ isOpen, onClose, initialTrack }) {
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="relative w-full max-w-lg bg-[#0A0B16] border border-accent-teal/40 rounded-3xl p-6 sm:p-8 shadow-[0_0_60px_rgba(34,227,200,0.3)] z-10 overflow-hidden"
+            className="relative w-full max-w-lg bg-[#0A0B16] border border-accent-teal/40 rounded-3xl p-5 sm:p-8 shadow-[0_0_60px_rgba(34,227,200,0.3)] z-10 max-h-[92dvh] overflow-y-auto my-auto"
           >
             {/* Header Close Button */}
             <button
               onClick={onClose}
-              className="absolute top-5 right-5 w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-text-muted hover:text-white transition-colors"
+              type="button"
+              aria-label="Close dialog"
+              className="absolute top-4 right-4 sm:top-5 sm:right-5 w-11 h-11 sm:w-9 sm:h-9 rounded-full bg-white/5 hover:bg-white/10 active:bg-white/20 flex items-center justify-center text-text-muted hover:text-white transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
 
             {!isSubmitted ? (
               <div>
-                <div className="flex items-center gap-2 text-accent-teal text-xs font-bold uppercase tracking-widest mb-1">
+                <div className="flex items-center gap-2 text-accent-teal text-xs font-bold uppercase tracking-widest mb-1 pt-1 sm:pt-0">
                   <Sparkles className="w-4 h-4" />
                   <span>Limited Capacity Pass</span>
                 </div>
-                <h3 className="font-display text-3xl font-black uppercase text-white tracking-wide text-stroke-pink mb-2">
+                <h3 className="font-display text-2xl sm:text-3xl font-black uppercase text-white tracking-wide text-stroke-pink mb-2">
                   Apply for Hacklanta '26
                 </h3>
-                <p className="text-text-secondary text-xs sm:text-sm mb-6">
+                <p className="text-text-secondary text-xs sm:text-sm mb-5">
                   Oct 9–11, Atlanta Tech Square. Free food, hardware access, and $45K+ in bounties.
                 </p>
 
@@ -147,7 +165,7 @@ export default function RegistrationModal({ isOpen, onClose, initialTrack }) {
                       placeholder="Alex Mercer"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full bg-[#11131c] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-text-muted/50 text-sm focus:outline-none focus:border-accent-teal transition-colors"
+                      className="w-full bg-[#11131c] border border-white/10 rounded-xl px-4 py-3 sm:py-2.5 text-white placeholder-text-muted/50 text-base sm:text-sm focus:outline-none focus:border-accent-teal transition-colors"
                     />
                   </div>
 
@@ -161,7 +179,7 @@ export default function RegistrationModal({ isOpen, onClose, initialTrack }) {
                       placeholder="alex@gatech.edu"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="w-full bg-[#11131c] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-text-muted/50 text-sm focus:outline-none focus:border-accent-teal transition-colors"
+                      className="w-full bg-[#11131c] border border-white/10 rounded-xl px-4 py-3 sm:py-2.5 text-white placeholder-text-muted/50 text-base sm:text-sm focus:outline-none focus:border-accent-teal transition-colors"
                     />
                   </div>
 
@@ -176,7 +194,7 @@ export default function RegistrationModal({ isOpen, onClose, initialTrack }) {
                         placeholder="Georgia Tech / Emory / etc."
                         value={formData.university}
                         onChange={(e) => setFormData({ ...formData, university: e.target.value })}
-                        className="w-full bg-[#11131c] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-text-muted/50 text-sm focus:outline-none focus:border-accent-teal transition-colors"
+                        className="w-full bg-[#11131c] border border-white/10 rounded-xl px-4 py-3 sm:py-2.5 text-white placeholder-text-muted/50 text-base sm:text-sm focus:outline-none focus:border-accent-teal transition-colors"
                       />
                     </div>
 
@@ -187,7 +205,7 @@ export default function RegistrationModal({ isOpen, onClose, initialTrack }) {
                       <select
                         value={formData.track}
                         onChange={(e) => setFormData({ ...formData, track: e.target.value })}
-                        className="w-full bg-[#11131c] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-accent-teal transition-colors"
+                        className="w-full bg-[#11131c] border border-white/10 rounded-xl px-4 py-3 sm:py-2.5 text-white text-base sm:text-sm focus:outline-none focus:border-accent-teal transition-colors"
                       >
                         <option value="Social Good">Social Good (Civic Impact)</option>
                         <option value="Creative & Media">Creative & Media (Arts)</option>
@@ -206,7 +224,7 @@ export default function RegistrationModal({ isOpen, onClose, initialTrack }) {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className={`w-full bg-primary-container hover:bg-[#ffe177] active:scale-95 text-[#0A0B16] font-display text-base uppercase py-3.5 rounded-full font-black tracking-wider transition-all shadow-[0_0_25px_rgba(255,216,61,0.4)] mt-2 flex items-center justify-center gap-2 ${
+                    className={`w-full min-h-[48px] bg-primary-container hover:bg-[#ffe177] active:scale-[0.98] text-[#0A0B16] font-display text-base uppercase py-3.5 rounded-full font-black tracking-wider transition-all shadow-[0_0_25px_rgba(255,216,61,0.4)] mt-2 flex items-center justify-center gap-2 cursor-pointer ${
                       isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
                     }`}
                   >
@@ -234,7 +252,7 @@ export default function RegistrationModal({ isOpen, onClose, initialTrack }) {
                 <div className="text-xs uppercase font-bold text-accent-teal tracking-widest mb-1">
                   Application Confirmed!
                 </div>
-                <h4 className="font-display text-3xl font-black uppercase text-white mb-2">
+                <h4 className="font-display text-2xl sm:text-3xl font-black uppercase text-white mb-2">
                   Welcome, {formData.name}!
                 </h4>
                 <p className="text-text-secondary text-xs sm:text-sm max-w-sm mb-6">
@@ -243,11 +261,11 @@ export default function RegistrationModal({ isOpen, onClose, initialTrack }) {
 
                 {/* Generated Badge Pass Preview */}
                 <div className="w-full bg-[#11131c] border border-accent-pink/30 rounded-2xl p-4 flex items-center justify-between mb-6 shadow-inner">
-                  <div className="text-left">
+                  <div className="text-left pr-2">
                     <div className="text-[10px] text-accent-pink uppercase font-bold tracking-widest">
                       Hacklanta '26 Attendee Pass
                     </div>
-                    <div className="font-display text-xl uppercase font-bold text-white mt-0.5">
+                    <div className="font-display text-lg sm:text-xl uppercase font-bold text-white mt-0.5 truncate max-w-[180px] sm:max-w-none">
                       {formData.name}
                     </div>
                     <div className="text-xs text-text-muted mt-1">
@@ -258,14 +276,15 @@ export default function RegistrationModal({ isOpen, onClose, initialTrack }) {
                     </div>
                   </div>
 
-                  <div className="p-2 bg-white rounded-xl shadow-md">
-                    <QrCode className="w-14 h-14 text-black" />
+                  <div className="p-2 bg-white rounded-xl shadow-md shrink-0">
+                    <QrCode className="w-12 h-12 sm:w-14 sm:h-14 text-black" />
                   </div>
                 </div>
 
                 <button
                   onClick={handleReset}
-                  className="bg-surface-muted hover:bg-white/10 text-white font-bold text-xs uppercase tracking-wider px-6 py-2.5 rounded-full border border-white/20 transition-colors"
+                  type="button"
+                  className="min-h-[44px] bg-surface-muted hover:bg-white/10 active:bg-white/20 text-white font-bold text-xs uppercase tracking-wider px-6 py-2.5 rounded-full border border-white/20 transition-colors inline-flex items-center justify-center cursor-pointer"
                 >
                   Close & Return to Festival Site
                 </button>

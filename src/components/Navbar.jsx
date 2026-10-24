@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Menu, 
@@ -10,30 +10,64 @@ export default function Navbar({ onOpenApply, onOpenLogin }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('home');
+  const rafRef = useRef(null);
 
+  // Throttled scroll handler via requestAnimationFrame
   useEffect(() => {
+    let ticking = false;
+
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 30);
+      if (ticking) return;
+      ticking = true;
 
-      const sections = ['home', 'what-is-hacklanta', 'tracks', 'prizes', 'sponsors', 'faq'];
-      const scrollPos = window.scrollY + 200;
+      rafRef.current = requestAnimationFrame(() => {
+        setIsScrolled(window.scrollY > 30);
 
-      for (const section of sections) {
-        const el = document.getElementById(section);
-        if (el) {
-          const top = el.offsetTop;
-          const height = el.offsetHeight;
-          if (scrollPos >= top && scrollPos < top + height) {
-            setActiveSection(section);
-            break;
+        const sections = ['home', 'what-is-hacklanta', 'tracks', 'prizes', 'sponsors', 'faq'];
+        const scrollPos = window.scrollY + 200;
+
+        for (const section of sections) {
+          const el = document.getElementById(section);
+          if (el) {
+            const top = el.offsetTop;
+            const height = el.offsetHeight;
+            if (scrollPos >= top && scrollPos < top + height) {
+              setActiveSection(section);
+              break;
+            }
           }
         }
-      }
+        ticking = false;
+      });
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
   }, []);
+
+  // Close mobile menu on resize to desktop
+  useEffect(() => {
+    const onResize = () => {
+      if (window.innerWidth >= 1024 && mobileMenuOpen) {
+        setMobileMenuOpen(false);
+      }
+    };
+    window.addEventListener('resize', onResize, { passive: true });
+    return () => window.removeEventListener('resize', onResize);
+  }, [mobileMenuOpen]);
+
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [mobileMenuOpen]);
 
   const navLinks = [
     { name: 'Home', href: '#home', id: 'home' },
@@ -42,7 +76,7 @@ export default function Navbar({ onOpenApply, onOpenLogin }) {
     { name: 'FAQ', href: '#faq', id: 'faq' },
   ];
 
-  const scrollToSection = (e, sectionId) => {
+  const scrollToSection = useCallback((e, sectionId) => {
     e.preventDefault();
     setMobileMenuOpen(false);
     const el = document.getElementById(sectionId);
@@ -50,7 +84,7 @@ export default function Navbar({ onOpenApply, onOpenLogin }) {
       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
       setActiveSection(sectionId);
     }
-  };
+  }, []);
 
   return (
     <>
@@ -60,13 +94,16 @@ export default function Navbar({ onOpenApply, onOpenLogin }) {
         href="https://mlh.io"
         target="_blank"
         rel="noreferrer"
-        className="fixed top-0 left-6 sm:left-12 z-[60] w-14 sm:w-16 transition-transform hover:translate-y-1 drop-shadow-xl"
+        className="fixed top-0 left-4 sm:left-12 z-[60] w-12 sm:w-16 transition-transform hover:translate-y-1 drop-shadow-xl"
         title="Major League Hacking Official Season"
       >
         <img
           src="https://logged-assets.s3.amazonaws.com/trust-badge/2027/mlh-trust-badge-2027-white.svg"
           alt="Major League Hacking Official 2027 Season"
           className="w-full"
+          loading="lazy"
+          width="64"
+          height="128"
         />
       </a>
 
@@ -76,15 +113,15 @@ export default function Navbar({ onOpenApply, onOpenLogin }) {
           ? 'bg-[#04050D]/90 backdrop-blur-xl border-b border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.8)]' 
           : 'bg-transparent'
       }`}>
-        <div className="w-full max-w-[1400px] mx-auto px-6 sm:px-12 h-20 flex items-center justify-between relative pl-24 sm:pl-36">
+        <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-12 h-16 sm:h-20 flex items-center justify-between relative pl-20 sm:pl-36">
           {/* LEFT: HACKLANTA 26 LOGOMARK */}
           <a
             href="#home"
             onClick={(e) => scrollToSection(e, 'home')}
-            className="flex items-center gap-2 group cursor-pointer"
+            className="flex items-center gap-2 group cursor-pointer min-h-[44px]"
           >
-            <span className="font-wordmark text-2xl sm:text-3xl font-black lowercase tracking-tight text-white group-hover:text-accent-teal transition-colors drop-shadow-[0_2px_0_#FF2E88]">
-              hacklanta <span className="font-display text-sm uppercase text-[#FFD83D] font-black tracking-normal">&apos;26</span>
+            <span className="font-wordmark text-xl sm:text-3xl font-black lowercase tracking-tight text-white group-hover:text-accent-teal transition-colors drop-shadow-[0_2px_0_#FF2E88]">
+              hacklanta <span className="font-display text-xs sm:text-sm uppercase text-[#FFD83D] font-black tracking-normal">&apos;26</span>
             </span>
           </a>
 
@@ -97,7 +134,7 @@ export default function Navbar({ onOpenApply, onOpenLogin }) {
                   key={link.id}
                   href={link.href}
                   onClick={(e) => scrollToSection(e, link.id)}
-                  className={`text-[12px] uppercase font-bold tracking-widest transition-all relative py-1 cursor-pointer ${
+                  className={`text-[12px] uppercase font-bold tracking-widest transition-all relative py-1 cursor-pointer min-h-[44px] flex items-center ${
                     isActive 
                       ? 'text-accent-teal drop-shadow-[0_0_8px_rgba(34,227,200,0.6)]' 
                       : 'text-text-secondary hover:text-white'
@@ -117,13 +154,13 @@ export default function Navbar({ onOpenApply, onOpenLogin }) {
           </nav>
 
           {/* RIGHT CLUSTER: DISCORD, INSTA, LOG IN, APPLY NOW */}
-          <div className="flex items-center gap-3 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             {/* Discord Icon */}
             <a 
               href="https://discord.gg" 
               target="_blank" 
               rel="noreferrer"
-              className="text-text-muted hover:text-white transition-colors p-1.5"
+              className="hidden sm:flex text-text-muted hover:text-white transition-colors p-2 min-w-[44px] min-h-[44px] items-center justify-center"
               title="Discord"
             >
               <svg className="w-5 h-5 fill-current" viewBox="0 0 126.644 96">
@@ -136,7 +173,7 @@ export default function Navbar({ onOpenApply, onOpenLogin }) {
               href="https://instagram.com" 
               target="_blank" 
               rel="noreferrer"
-              className="text-text-muted hover:text-white transition-colors p-1.5"
+              className="hidden sm:flex text-text-muted hover:text-white transition-colors p-2 min-w-[44px] min-h-[44px] items-center justify-center"
               title="Instagram"
             >
               <svg className="w-5 h-5 fill-none stroke-current stroke-2" viewBox="0 0 24 24">
@@ -150,7 +187,7 @@ export default function Navbar({ onOpenApply, onOpenLogin }) {
             <button
               type="button"
               onClick={onOpenLogin}
-              className="px-4 py-2 rounded-full border border-white/20 bg-white/5 hover:bg-white/10 text-[11px] uppercase font-bold tracking-wider text-white transition-all cursor-pointer"
+              className="hidden sm:flex px-4 py-2 rounded-full border border-white/20 bg-white/5 hover:bg-white/10 text-[11px] uppercase font-bold tracking-wider text-white transition-all cursor-pointer min-h-[44px] items-center justify-center"
             >
               Log in
             </button>
@@ -159,16 +196,16 @@ export default function Navbar({ onOpenApply, onOpenLogin }) {
             <button
               type="button"
               onClick={onOpenApply}
-              className="bg-[#FFD83D] hover:bg-[#FFE36A] active:scale-95 text-[#0A0B16] text-[12px] uppercase font-black px-5 py-2.5 rounded-full shadow-[0_0_20px_rgba(255,216,61,0.5)] hover:shadow-[0_0_28px_rgba(255,216,61,0.7)] transition-all flex items-center gap-1 cursor-pointer"
+              className="bg-[#FFD83D] hover:bg-[#FFE36A] active:scale-95 text-[#0A0B16] text-[11px] sm:text-[12px] uppercase font-black px-4 sm:px-5 py-2 sm:py-2.5 rounded-full shadow-[0_0_20px_rgba(255,216,61,0.5)] hover:shadow-[0_0_28px_rgba(255,216,61,0.7)] transition-all flex items-center gap-1 cursor-pointer min-h-[44px]"
             >
               Apply now
             </button>
 
-            {/* Mobile Menu Toggle */}
+            {/* Mobile Menu Toggle — 44x44 touch target */}
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 text-text-secondary hover:text-white cursor-pointer"
+              className="lg:hidden p-2 text-text-secondary hover:text-white cursor-pointer min-w-[44px] min-h-[44px] flex items-center justify-center"
               aria-label="Toggle Navigation"
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -176,49 +213,59 @@ export default function Navbar({ onOpenApply, onOpenLogin }) {
           </div>
         </div>
 
-        {/* MOBILE DRAWER */}
+        {/* MOBILE DRAWER — Full-screen overlay for clean UX */}
         <AnimatePresence>
           {mobileMenuOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="lg:hidden bg-[#0A0B16] border-b border-white/10 px-6 py-6 flex flex-col gap-4 overflow-hidden"
-            >
-              {navLinks.map((link) => (
-                <a
-                  key={link.id}
-                  href={link.href}
-                  onClick={(e) => scrollToSection(e, link.id)}
-                  className="text-base uppercase font-bold text-text-secondary hover:text-accent-teal py-2 border-b border-white/5 flex items-center justify-between cursor-pointer"
-                >
-                  <span>{link.name}</span>
-                  <ArrowUpRight className="w-4 h-4 opacity-50" />
-                </a>
-              ))}
-              <div className="pt-2 flex flex-col gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    onOpenApply();
-                  }}
-                  className="w-full bg-[#FFD83D] text-black py-3 rounded-full font-black uppercase tracking-wider text-sm shadow-[0_0_20px_rgba(255,216,61,0.4)] cursor-pointer"
-                >
-                  Apply now
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    onOpenLogin();
-                  }}
-                  className="w-full bg-[#1A1C2E] text-white py-3 rounded-full font-bold uppercase tracking-wider text-sm border border-white/10 cursor-pointer"
-                >
-                  Log in
-                </button>
-              </div>
-            </motion.div>
+            <>
+              {/* Backdrop to close on tap outside */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setMobileMenuOpen(false)}
+                className="lg:hidden fixed inset-0 bg-black/50 z-[-1]"
+              />
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="lg:hidden bg-[#0A0B16] border-b border-white/10 px-6 py-6 flex flex-col gap-4 overflow-hidden"
+              >
+                {navLinks.map((link) => (
+                  <a
+                    key={link.id}
+                    href={link.href}
+                    onClick={(e) => scrollToSection(e, link.id)}
+                    className="text-base uppercase font-bold text-text-secondary hover:text-accent-teal py-3 border-b border-white/5 flex items-center justify-between cursor-pointer min-h-[48px]"
+                  >
+                    <span>{link.name}</span>
+                    <ArrowUpRight className="w-4 h-4 opacity-50" />
+                  </a>
+                ))}
+                <div className="pt-2 flex flex-col gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      onOpenApply();
+                    }}
+                    className="w-full bg-[#FFD83D] text-black py-3.5 rounded-full font-black uppercase tracking-wider text-sm shadow-[0_0_20px_rgba(255,216,61,0.4)] cursor-pointer min-h-[48px]"
+                  >
+                    Apply now
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      onOpenLogin();
+                    }}
+                    className="w-full bg-[#1A1C2E] text-white py-3.5 rounded-full font-bold uppercase tracking-wider text-sm border border-white/10 cursor-pointer min-h-[48px]"
+                  >
+                    Log in
+                  </button>
+                </div>
+              </motion.div>
+            </>
           )}
         </AnimatePresence>
       </header>
