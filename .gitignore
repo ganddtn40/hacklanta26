@@ -39,3 +39,15 @@ Thumbs.db
 
 # Agent metadata
 .agents/
+
+# Google Stitch Artifacts
+hacklanta_26_design_system_foundation/
+hacklanta_26_faq_footer/
+hacklanta_26_header_hero/
+hacklanta_26_landing_page/
+hacklanta_26_prizes/
+hacklanta_26_sponsors/
+hacklanta_26_tracks_sponsor_challenges/
+psychedelic_cyber_festival/
+what_is_hacklanta_section_2_6/
+design.md
