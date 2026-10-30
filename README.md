@@ -1,5 +1,5 @@
 # Hacklanta '26
-### Official Event Landing Page
+### UnOfficial Event Landing Page
 
 > Atlanta's flagship collegiate cyber festival and hackathon — October 9–11, 2026 at Atlanta Tech Square.
 
